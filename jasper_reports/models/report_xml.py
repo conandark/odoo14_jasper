@@ -96,7 +96,9 @@ class ReportXml(models.Model):
     # To get the model name from current models in database,we add a new field
     # and it will give us model name at create and update time.
     jasper_report = fields.Boolean('Is Jasper Report?')
-    #report_type = fields.Selection(selection_add=[("jasper", "Jasper")],  ondelete='cascade')
+    report_type = fields.Selection(
+        selection_add=[("jasper", "Jasper")], ondelete={"jasper": "set default"}
+    )
 
     def retrieve_jasper_attachment(self, record):
         '''Retrieve an attachment for a specific record.

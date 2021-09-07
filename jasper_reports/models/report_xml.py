@@ -96,7 +96,7 @@ class ReportXml(models.Model):
     # To get the model name from current models in database,we add a new field
     # and it will give us model name at create and update time.
     jasper_report = fields.Boolean('Is Jasper Report?')
-    report_type = fields.Selection(selection_add=[("jasper", "Jasper")])
+    #report_type = fields.Selection(selection_add=[("jasper", "Jasper")],  ondelete='cascade')
 
     def retrieve_jasper_attachment(self, record):
         '''Retrieve an attachment for a specific record.
@@ -110,7 +110,7 @@ class ReportXml(models.Model):
             attachment_name = str(report.name) + '.' + report.jasper_output
             if report.attachment:
                 attachment_name = safe_eval(
-                    report.attachment, {'object': record, 'time': time})
+                    report.attachment, {'object': record, 'time': time.time()})
             return attachment_obj.search([
                 ('datas_fname', '=', attachment_name),
                 ('res_model', '=', report.model),
@@ -132,7 +132,7 @@ class ReportXml(models.Model):
             attachment_name = str(report.name) + '.' + report.jasper_output
             if report.attachment:
                 attachment_name = safe_eval(
-                    report.attachment, {'object': record, 'time': time})
+                    report.attachment, {'object': record, 'time': time.time()})
             attachment_vals = {
                 'name': attachment_name,
                 'datas': base64.encodestring(buffer.getvalue()),
@@ -153,7 +153,10 @@ class ReportXml(models.Model):
 
     @api.model
     def render_jasper(self, docids, data):
-        cr, uid, context = self.env.args
+        cr = self.env.cr
+        uid = self.env.uid
+        context = self.env.context
+        #cr, uid, context = self.env.args
         if not data:
             data = {}
         doc_records = self.model_id.browse(docids)
@@ -391,3 +394,16 @@ class ReportXml(models.Model):
         top_node.appendChild(record_node)
         self.generate_xml(self.env, model, record_node, document, depth, True)
         return top_node.toxml()
+
+    def _get_readable_fields(self):
+        return super()._get_readable_fields() | {
+            "report_file", "multi", "paperformat_id",
+            # these two are not real fields of ir.actions.report but are
+            # expected in the route /report/<converter>/<reportname> and must
+            # not be removed by clean_action
+            "print_report_name", "attachment_use",
+            # and this one is used by the frontend later on.
+            "jasper_output","jasper_file_ids",
+            "jasper_report", "display_name",
+            "model","type"
+        }
